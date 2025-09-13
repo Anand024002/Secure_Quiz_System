@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Quiz Management System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Login Page Styles */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-box, .admin-login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.8);
+            color: #333;
+            border: 2px solid #667eea;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .switch-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Quiz Styles */
+        .quiz-container {
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .quiz-container * {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .quiz-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .quiz-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .student-info {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+        }
+
+        .violation-counter {
+            font-size: 1.1rem;
+            color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+        }
+
+        .question-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .question-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            color: #333;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.7);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+
+        .option.selected {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+        }
+
+        .option input[type="radio"] {
+            margin-right: 15px;
+            transform: scale(1.2);
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .btn-nav {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        /* Admin Dashboard Styles */
+        .admin-container {
+            padding: 20px 0;
+        }
+
+        .admin-header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-title {
+            font-size: 2rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .results-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+        }
+
+        .table-content {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .status-completed {
+            background: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+        }
+
+        .status-in-progress {
+            background: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+        }
+
+        .status-violations {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        /* Warning and Prompt Styles */
+        .warning-overlay, .fullscreen-prompt {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .warning-modal, .prompt-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .warning-title {
+            font-size: 1.8rem;
+            color: #e74c3c;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .warning-text {
+            font-size: 1.1rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .status-secure {
+            background: rgba(39, 174, 96, 0.9);
+            color: white;
+        }
+
+        .status-warning {
+            background: rgba(243, 156, 18, 0.9);
+            color: white;
+        }
+
+        .filters {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .filter-group select, .filter-group input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .quiz-info, .admin-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            table {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-box">
+                <h2 class="login-title">Student Login</h2>
+                <div class="form-group">
+                    <label for="studentId">Student ID</label>
+                    <input type="text" id="studentId" required placeholder="Enter your student ID">
+                </div>
+                <div class="form-group">
+                    <label for="studentName">Full Name</label>
+                    <input type="text" id="studentName" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="studentEmail">Email</label>
+                    <input type="email" id="studentEmail" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="studentBatch">Batch/Class</label>
+                    <select id="studentBatch" required>
+                        <option value="">Select Batch</option>
+                        <option value="CSE-2024">CSE 2024</option>
+                        <option value="IT-2024">IT 2024</option>
+                        <option value="ECE-2024">ECE 2024</option>
+                        <option value="MECH-2024">MECH 2024</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="studentLogin()">Start Quiz</button>
+                <div class="switch-link" onclick="showAdminLogin()">Admin Login</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Page -->
+    <div id="adminLoginPage" class="page">
+        <div class="login-container">
+            <div class="admin-login-box">
+                <h2 class="login-title">Admin Login</h2>
+                <div class="form-group">
+                    <label for="adminUsername">Username</label>
+                    <input type="text" id="adminUsername" required placeholder="Enter admin username">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <input type="password" id="adminPassword" required placeholder="Enter admin password">
+                </div>
+                <button class="btn btn-primary" onclick="adminLogin()">Login</button>
+                <div class="switch-link" onclick="showStudentLogin()">Student Login</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Prompt -->
+    <div id="fullscreenPrompt" class="fullscreen-prompt">
+        <div class="prompt-content">
+            <h2>Secure Quiz Mode</h2>
+            <p>This quiz requires fullscreen mode to prevent cheating. Click the button below to enter fullscreen and start the quiz.</p>
+            <p><strong>Warning:</strong> Exiting fullscreen, switching tabs, or suspicious activities will be monitored and may result in automatic submission.</p>
+            <button class="btn btn-primary" onclick="startSecureQuiz()">Enter Fullscreen & Start Quiz</button>
+        </div>
+    </div>
+
+    <!-- Quiz Page -->
+    <div id="quizPage" class="page">
+        <div class="status-indicator" id="statusIndicator">🔒 Secure Mode</div>
+        
+        <div class="quiz-container">
+            <div class="header">
+                <h1 class="quiz-title">Technical Assessment Quiz</h1>
+                <div class="quiz-info">
+                    <div class="student-info" id="studentInfo">Student: Loading...</div>
+                    <div class="timer" id="timer">Time: 30:00</div>
+                    <div class="violation-counter" id="violationCounter">Violations: 0/3</div>
+                </div>
+            </div>
+
+            <div class="question-card" id="questionCard">
+                <div class="question-header">
+                    <span class="question-number" id="questionNumber">Question 1 of 5</span>
+                </div>
+                <div class="question-text" id="questionText">Loading question...</div>
+                <div class="options" id="optionsContainer">
+                    <!-- Options will be loaded here -->
+                </div>
+                <div class="navigation">
+                    <button class="btn-nav btn-secondary" id="prevBtn" onclick="previousQuestion()">Previous</button>
+                    <button class="btn-nav btn-primary" id="nextBtn" onclick="nextQuestion()">Next</button>
+                    <button class="btn-nav btn-primary" id="submitBtn" onclick="submitQuiz()" style="display: none;">Submit Quiz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminPage" class="page">
+        <div class="container">
+            <div class="admin-container">
+                <div class="admin-header">
+                    <h1 class="admin-title">Quiz Management Dashboard</h1>
+                    <button class="logout-btn" onclick="logout()">Logout</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalStudents">0</div>
+                        <div class="stat-label">Total Students</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="completedQuizzes">0</div>
+                        <div class="stat-label">Completed Quizzes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="averageScore">0%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalViolations">0</div>
+                        <div class="stat-label">Total Violations</div>
+                    </div>
+                </div>
+
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Batch Filter</label>
+                        <select id="batchFilter" onchange="filterResults()">
+                            <option value="">All Batches</option>
+                            <option value="CSE-2024">CSE 2024</option>
+                            <option value="IT-2024">IT 2024</option>
+                            <option value="ECE-2024">ECE 2024</option>
+                            <option value="MECH-2024">MECH 2024</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status Filter</label>
+                        <select id="statusFilter" onchange="filterResults()">
+                            <option value="">All Status</option>
+                            <option value="completed">Completed</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="violations">With Violations</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Search Student</label>
+                        <input type="text" id="searchStudent" onkeyup="filterResults()" placeholder="Search by name or ID">
+                    </div>
+                    <div class="filter-group">
+                        <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
+                    </div>
+                </div>
+
+                <div class="results-table">
+                    <div class="table-header">Quiz Results</div>
+                    <div class="table-content">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Batch</th>
+                                    <th>Score</th>
+                                    <th>Time Taken</th>
+                                    <th>Violations</th>
+                                    <th>Status</th>
+                                    <th>Started At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                                <!-- Results will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Warning Overlay -->
+    <div class="warning-overlay" id="warningOverlay">
+        <div class="warning-modal">
+            <div class="warning-title">⚠️ Security Violation Detected</div>
+            <div class="warning-text" id="warningText">Suspicious activity detected. Please return to the quiz.</div>
+            <button class="btn btn-primary" onclick="dismissWarning()">Continue Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // Global state management
+        let currentUser = null;
+        let isAdmin = false;
+        let quizResults = JSON.parse(localStorage.getItem('quizResults') || '[]');
+        
+        // Admin credentials (in real app, this should be server-side)
+        const ADMIN_CREDENTIALS = {
+            username: 'admin',
+            password: 'admin123'
+        };
+
+        // Quiz configuration and state
+        let quizState = {
+            currentQuestion: 0,
+            answers: {},
+            violations: 0,
+            maxViolations: 3,
+            timeLeft: 1800, // 30 minutes
+            isActive: false,
+            startTime: null,
+            student: null
+        };
+
+        // Sample questions
+        const questions = [
+            {
+                text: "Which of the following is NOT a valid JavaScript data type?",
+                options: ["undefined", "boolean", "integer", "symbol"],
+                correct: 2
+            },
+            {
+                text: "What is the time complexity of binary search algorithm?",
+                options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
+                correct: 1
+            },
+            {
+                text: "Which HTTP status code indicates a successful response?",
+                options: ["404", "500", "200", "301"],
+                correct: 2
+            },
+            {
+                text: "In object-oriented programming, what does 'inheritance' mean?",
+                options: [
+                    "Creating multiple objects",
+                    "A class acquiring properties from another class",
+                    "Hiding implementation details",
+                    "Grouping related functions"
+                ],
+                correct: 1
+            },
+            {
+                text: "Which of these is a NoSQL database?",
+                options: ["MySQL", "PostgreSQL", "MongoDB", "SQLite"],
+                correct: 2
+            }
+        ];
+
+        // Security monitoring variables
+        let tabSwitchCount = 0;
+        let devToolsDetected = false;
+        let securityTimer = null;
+        let violationLog = [];
+
+        // Page navigation functions
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        function showStudentLogin() {
+            showPage('loginPage');
+        }
+
+        function showAdminLogin() {
+            showPage('adminLoginPage');
+        }
+
+        // Authentication functions
+        function studentLogin() {
+            const studentId = document.getElementById('studentId').value.trim();
+            const studentName = document.getElementById('studentName').value.trim();
+            const studentEmail = document.getElementById('studentEmail').value.trim();
+            const studentBatch = document.getElementById('studentBatch').value;
+
+            if (!studentId || !studentName || !studentEmail || !studentBatch) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            // Check if student already took the quiz
+            const existingResult = quizResults.find(result => result.studentId === studentId);
+            if (existingResult && existingResult.status === 'completed') {
+                alert('You have already completed this quiz!');
+                return;
+            }
+
+            currentUser = {
+                id: studentId,
+                name: studentName,
+                email: studentEmail,
+                batch: studentBatch,
+                type: 'student'
+            };
+
+            quizState.student = currentUser;
+            document.getElementById('fullscreenPrompt').style.display = 'flex';
+        }
+
+        function adminLogin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                currentUser = { type: 'admin' };
+                isAdmin = true;
+                showPage('adminPage');
+                loadAdminDashboard();
+            } else {
+                alert('Invalid admin credentials');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            isAdmin = false;
+            showPage('loginPage');
+            
+            // Clear form fields
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+        }
+
+        // Quiz functions
+        function startSecureQuiz() {
+            // Request fullscreen
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                document.documentElement.webkitRequestFullscreen();
+            } else if (document.documentElement.msRequestFullscreen) {
+                document.documentElement.msRequestFullscreen();
+            }
+
+            // Hide prompt and show quiz
+            document.getElementById('fullscreenPrompt').style.display = 'none';
+            showPage('quizPage');
+
+            // Initialize quiz
+            quizState.isActive = true;
+            quizState.startTime = Date.now();
+            document.getElementById('studentInfo').textContent = 
+                `Student: ${currentUser.name} (${currentUser.id})`;
+            
+            // Add or update student record
+            addOrUpdateStudentRecord('in-progress');
+            
+            loadQuestion();
+            startTimer();
+            initializeSecurity();
+        }
+
+        function addOrUpdateStudentRecord(status) {
+            const existingIndex = quizResults.findIndex(result => result.studentId === currentUser.id);
+            
+            const record = {
+                studentId: currentUser.id,
+                name: currentUser.name,
+                email: currentUser.email,
+                batch: currentUser.batch,
+                status: status,
+                score: 0,
+                totalQuestions: questions.length,
+                answers: quizState.answers,
+                violations: quizState.violations,
+                violationLog: violationLog,
+                timeSpent: quizState.startTime ? Date.now() - quizState.startTime : 0,
+                startedAt: quizState.startTime ? new Date(quizState.startTime).toISOString() : new Date().toISOString(),
+                completedAt: status === 'completed' ? new Date().toISOString() : null
+            };
+
+            if (existingIndex >= 0) {
+                quizResults[existingIndex] = record;
+            } else {
+                quizResults.push(record);
+            }
+
+            localStorage.setItem('quizResults', JSON.stringify(quizResults));
+        }
+
+        function loadQuestion() {
+            const question = questions[quizState.currentQuestion];
+            
+            document.getElementById('questionNumber').textContent = 
+                `Question ${quizState.currentQuestion + 1} of ${questions.length}`;
+            document.getElementById('questionText').textContent = question.text;
+
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+
+            question.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.onclick = () => selectOption(index);
+
+                const input = document.createElement('input');
+                input.type = 'radio';
+                input.name = 'option';
+                input.value = index;
+                input.id = `option${index}`;
+
+                const label = document.createElement('label');
+                label.textContent = option;
+                label.setAttribute('for', `option${index}`);
+
+                optionDiv.appendChild(input);
+                optionDiv.appendChild(label);
+                optionsContainer.appendChild(optionDiv);
+
+                // Restore previous selection
+                if (quizState.answers[quizState.currentQuestion] === index) {
+                    input.checked = true;
+                    optionDiv.classList.add('selected');
+                }
+            });
+
+            updateNavigationButtons();
+        }
+
+        function selectOption(index) {
+            quizState.answers[quizState.currentQuestion] = index;
+            
+            // Update UI
+            document.querySelectorAll('.option').forEach((opt, i) => {
+                opt.classList.toggle('selected', i === index);
+                opt.querySelector('input').checked = i === index;
+            });
+
+            // Update record
+            addOrUpdateStudentRecord('in-progress');
+        }
+
+        function nextQuestion() {
+            if (quizState.currentQuestion < questions.length - 1) {
+                quizState.currentQuestion++;
+                loadQuestion();
+            }
+        }
+
+        function previousQuestion() {
+            if (quizState.currentQuestion > 0) {
+                quizState.currentQuestion--;
+                loadQuestion();
+            }
+        }
+
+        function updateNavigationButtons() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+
+            prevBtn.style.display = quizState.currentQuestion === 0 ? 'none' : 'block';
+            
+            if (quizState.currentQuestion === questions.length - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+        }
+
+        // Timer functions
+        function startTimer() {
+            const timerElement = document.getElementById('timer');
+            
+            const updateTimer = () => {
+                const minutes = Math.floor(quizState.timeLeft / 60);
+                const seconds = quizState.timeLeft % 60;
+                timerElement.textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                if (quizState.timeLeft <= 0) {
+                    forceSubmitQuiz('Time up');
+                } else {
+                    quizState.timeLeft--;
+                }
+            };
+
+            updateTimer();
+            securityTimer = setInterval(updateTimer, 1000);
+        }
+
+        // Security functions
+        function initializeSecurity() {
+            // Disable right-click context menu
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                logViolation('Right-click attempt');
+            });
+
+            // Disable text selection
+            document.addEventListener('selectstart', (e) => {
+                e.preventDefault();
+            });
+
+            // Disable drag
+            document.addEventListener('dragstart', (e) => {
+                e.preventDefault();
+            });
+
+            // Monitor keyboard shortcuts
+            document.addEventListener('keydown', (e) => {
+                const forbiddenKeys = ['F12', 'F5', 'F11'];
+                const forbiddenCombos = [
+                    { ctrl: true, key: 'r' }, { ctrl: true, key: 'R' },
+                    { ctrl: true, key: 'u' }, { ctrl: true, key: 'U' },
+                    { ctrl: true, key: 's' }, { ctrl: true, key: 'S' },
+                    { ctrl: true, key: 'a' }, { ctrl: true, key: 'A' },
+                    { ctrl: true, key: 'c' }, { ctrl: true, key: 'C' },
+                    { ctrl: true, key: 'v' }, { ctrl: true, key: 'V' },
+                    { ctrl: true, key: 'x' }, { ctrl: true, key: 'X' },
+                    { ctrl: true, shift: true, key: 'i' }, { ctrl: true, shift: true, key: 'I' },
+                    { ctrl: true, shift: true, key: 'j' }, { ctrl: true, shift: true, key: 'J' },
+                    { ctrl: true, shift: true, key: 'c' }, { ctrl: true, shift: true, key: 'C' },
+                    { alt: true, key: 'Tab' }, { alt: true, key: 'F4' }
+                ];
+
+                if (forbiddenKeys.includes(e.key)) {
+                    e.preventDefault();
+                    logViolation(`Forbidden key: ${e.key}`);
+                    return false;
+                }
+
+                for (let combo of forbiddenCombos) {
+                    let match = true;
+                    if (combo.ctrl && !e.ctrlKey) match = false;
+                    if (combo.alt && !e.altKey) match = false;
+                    if (combo.shift && !e.shiftKey) match = false;
+                    if (combo.key && e.key !== combo.key) match = false;
+
+                    if (match) {
+                        e.preventDefault();
+                        logViolation(`Forbidden combination: ${JSON.stringify(combo)}`);
+                        return false;
+                    }
+                }
+            });
+
+            // Monitor visibility change (tab switching)
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden && quizState.isActive) {
+                    tabSwitchCount++;
+                    logViolation('Tab switch detected');
+                }
+            });
+
+            // Monitor focus loss
+            window.addEventListener('blur', () => {
+                if (quizState.isActive) {
+                    logViolation('Window focus lost');
+                }
+            });
+
+            // Monitor fullscreen exit
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement && quizState.isActive) {
+                    logViolation('Fullscreen exited');
+                    showWarning('Fullscreen mode required!', 'Please return to fullscreen to continue the quiz.');
+                }
+            });
+
+            // Monitor resize (potential dev tools)
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    if (quizState.isActive) {
+                        logViolation('Window resize detected (possible dev tools)');
+                    }
+                }, 100);
+            });
+
+            // Dev tools detection
+            setInterval(() => {
+                if (quizState.isActive) {
+                    detectDevTools();
+                }
+            }, 1000);
+
+            // Prevent page unload during active quiz
+            window.addEventListener('beforeunload', (e) => {
+                if (quizState.isActive) {
+                    e.preventDefault();
+                    e.returnValue = '';
+                    logViolation('Attempted to leave page');
+                }
+            });
+        }
+
+        function detectDevTools() {
+            const threshold = 160;
+            if (window.outerHeight - window.innerHeight > threshold || 
+                window.outerWidth - window.innerWidth > threshold) {
+                if (!devToolsDetected) {
+                    devToolsDetected = true;
+                    logViolation('Developer tools detected');
+                }
+            } else {
+                devToolsDetected = false;
+            }
+        }
+
+        function logViolation(type) {
+            const violation = {
+                type: type,
+                timestamp: new Date().toISOString(),
+                question: quizState.currentQuestion + 1
+            };
+            
+            violationLog.push(violation);
+            quizState.violations++;
+            
+            updateViolationCounter();
+            updateStatusIndicator();
+            addOrUpdateStudentRecord('in-progress');
+
+            if (quizState.violations >= quizState.maxViolations) {
+                showWarning(
+                    'Maximum Violations Reached!', 
+                    'Your quiz will be automatically submitted due to multiple security violations.'
+                );
+                setTimeout(() => {
+                    forceSubmitQuiz('Too many violations');
+                }, 3000);
+            } else {
+                showWarning(
+                    'Security Violation Detected!', 
+                    `${type}. You have ${quizState.maxViolations - quizState.violations} warning(s) remaining.`
+                );
+            }
+        }
+
+        function updateViolationCounter() {
+            const counter = document.getElementById('violationCounter');
+            counter.textContent = `Violations: ${quizState.violations}/${quizState.maxViolations}`;
+            
+            if (quizState.violations > 0) {
+                counter.style.color = '#e74c3c';
+                counter.style.background = 'rgba(231, 76, 60, 0.1)';
+            }
+        }
+
+        function updateStatusIndicator() {
+            const indicator = document.getElementById('statusIndicator');
+            
+            if (quizState.violations === 0) {
+                indicator.textContent = '🔒 Secure Mode';
+                indicator.className = 'status-indicator status-secure';
+            } else {
+                indicator.textContent = '⚠️ Violations Detected';
+                indicator.className = 'status-indicator status-warning';
+            }
+        }
+
+        function showWarning(title, text) {
+            document.getElementById('warningOverlay').style.display = 'flex';
+            document.querySelector('.warning-title').textContent = title;
+            document.getElementById('warningText').textContent = text;
+        }
+
+        function dismissWarning() {
+            document.getElementById('warningOverlay').style.display = 'none';
+        }
+
+        // Quiz submission functions
+        function submitQuiz() {
+            if (confirm('Are you sure you want to submit your quiz? This action cannot be undone.')) {
+                completeQuiz();
+            }
+        }
+
+        function forceSubmitQuiz(reason) {
+            alert(`Quiz automatically submitted: ${reason}`);
+            completeQuiz();
+        }
+
+        function completeQuiz() {
+            quizState.isActive = false;
+            clearInterval(securityTimer);
+            
+            // Calculate results
+            let score = 0;
+            let totalAnswered = 0;
+            
+            questions.forEach((question, index) => {
+                if (quizState.answers.hasOwnProperty(index)) {
+                    totalAnswered++;
+                    if (quizState.answers[index] === question.correct) {
+                        score++;
+                    }
+                }
+            });
+
+            // Update final record
+            const finalRecord = quizResults.find(result => result.studentId === currentUser.id);
+            if (finalRecord) {
+                finalRecord.status = 'completed';
+                finalRecord.score = score;
+                finalRecord.timeSpent = Date.now() - quizState.startTime;
+                finalRecord.completedAt = new Date().toISOString();
+                finalRecord.answers = quizState.answers;
+                finalRecord.violations = quizState.violations;
+                finalRecord.violationLog = violationLog;
+            }
+
+            localStorage.setItem('quizResults', JSON.stringify(quizResults));
+
+            // Exit fullscreen
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+
+            // Show results
+            alert(`Quiz Completed!\n\nScore: ${score}/${questions.length} (${Math.round((score/questions.length)*100)}%)\nQuestions Answered: ${totalAnswered}/${questions.length}\nViolations: ${quizState.violations}\nTime Taken: ${Math.floor((Date.now() - quizState.startTime) / 1000)} seconds`);
+            
+            // Return to login page
+            showPage('loginPage');
+            resetQuizState();
+        }
+
+        function resetQuizState() {
+            quizState = {
+                currentQuestion: 0,
+                answers: {},
+                violations: 0,
+                maxViolations: 3,
+                timeLeft: 1800,
+                isActive: false,
+                startTime: null,
+                student: null
+            };
+            violationLog = [];
+            currentUser = null;
+            
+            // Clear form fields
+            document.getElementById('studentId').value = '';
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentEmail').value = '';
+            document.getElementById('studentBatch').value = '';
+        }
+
+        // Admin dashboard functions
+        function loadAdminDashboard() {
+            updateStats();
+            loadResultsTable();
+        }
+
+        function updateStats() {
+            const results = quizResults;
+            const completedResults = results.filter(r => r.status === 'completed');
+            
+            document.getElementById('totalStudents').textContent = results.length;
+            document.getElementById('completedQuizzes').textContent = completedResults.length;
+            
+            if (completedResults.length > 0) {
+                const avgScore = completedResults.reduce((sum, r) => sum + (r.score / r.totalQuestions), 0) / completedResults.length;
+                document.getElementById('averageScore').textContent = Math.round(avgScore * 100) + '%';
+            } else {
+                document.getElementById('averageScore').textContent = '0%';
+            }
+            
+            const totalViolations = results.reduce((sum, r) => sum + r.violations, 0);
+            document.getElementById('totalViolations').textContent = totalViolations;
+        }
+
+        function loadResultsTable() {
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
+
+            quizResults.forEach(result => {
+                const row = document.createElement('tr');
+                
+                const statusClass = result.status === 'completed' ? 'status-completed' : 
+                                  result.status === 'in-progress' ? 'status-in-progress' : 'status-violations';
+                
+                const violationClass = result.violations > 0 ? 'status-violations' : '';
+                
+                const timeSpent = result.timeSpent ? formatTime(result.timeSpent) : 'N/A';
+                const scorePercentage = result.status === 'completed' ? 
+                    Math.round((result.score / result.totalQuestions) * 100) : 'N/A';
+
+                row.innerHTML = `
+                    <td>${result.studentId}</td>
+                    <td>${result.name}</td>
+                    <td>${result.batch}</td>
+                    <td>${result.status === 'completed' ? `${result.score}/${result.totalQuestions} (${scorePercentage}%)` : 'N/A'}</td>
+                    <td>${timeSpent}</td>
+                    <td><span class="status-badge ${violationClass}">${result.violations}</span></td>
+                    <td><span class="status-badge ${statusClass}">${result.status}</span></td>
+                    <td>${new Date(result.startedAt).toLocaleString()}</td>
+                    <td>
+                        <button onclick="viewDetails('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
+                        <button onclick="deleteResult('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #e74c3c; color: white; margin-left: 5px;">Delete</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        function formatTime(milliseconds) {
+            const seconds = Math.floor(milliseconds / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}m ${remainingSeconds}s`;
+        }
+
+        function filterResults() {
+            const batchFilter = document.getElementById('batchFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchStudent').value.toLowerCase();
+
+            let filteredResults = quizResults;
+
+            if (batchFilter) {
+                filteredResults = filteredResults.filter(r => r.batch === batchFilter);
+            }
+
+            if (statusFilter) {
+                if (statusFilter === 'violations') {
+                    filteredResults = filteredResults.filter(r => r.violations > 0);
+                } else {
+                    filteredResults = filteredResults.filter(r => r.status === statusFilter);
+                }
+            }
+
+            if (searchTerm) {
+                filteredResults = filteredResults.filter(r => 
+                    r.name.toLowerCase().includes(searchTerm) || 
+                    r.studentId.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Update table with filtered results
+            const tableBody = document.getElementById('resultsTableBody');
+            tableBody.innerHTML = '';
+
+            filteredResults.forEach(result => {
+                const row = document.createElement('tr');
+                
+                const statusClass = result.status === 'completed' ? 'status-completed' : 
+                                  result.status === 'in-progress' ? 'status-in-progress' : 'status-violations';
+                
+                const violationClass = result.violations > 0 ? 'status-violations' : '';
+                
+                const timeSpent = result.timeSpent ? formatTime(result.timeSpent) : 'N/A';
+                const scorePercentage = result.status === 'completed' ? 
+                    Math.round((result.score / result.totalQuestions) * 100) : 'N/A';
+
+                row.innerHTML = `
+                    <td>${result.studentId}</td>
+                    <td>${result.name}</td>
+                    <td>${result.batch}</td>
+                    <td>${result.status === 'completed' ? `${result.score}/${result.totalQuestions} (${scorePercentage}%)` : 'N/A'}</td>
+                    <td>${timeSpent}</td>
+                    <td><span class="status-badge ${violationClass}">${result.violations}</span></td>
+                    <td><span class="status-badge ${statusClass}">${result.status}</span></td>
+                    <td>${new Date(result.startedAt).toLocaleString()}</td>
+                    <td>
+                        <button onclick="viewDetails('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
+                        <button onclick="deleteResult('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #e74c3c; color: white; margin-left: 5px;">Delete</button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        function viewDetails(studentId) {
+            const result = quizResults.find(r => r.studentId === studentId);
+            if (!result) return;
+
+            let detailsText = `Student Details:\n`;
+            detailsText += `ID: ${result.studentId}\n`;
+            detailsText += `Name: ${result.name}\n`;
+            detailsText += `Email: ${result.email}\n`;
+            detailsText += `Batch: ${result.batch}\n`;
+            detailsText += `Status: ${result.status}\n`;
+            detailsText += `Score: ${result.status === 'completed' ? `${result.score}/${result.totalQuestions}` : 'N/A'}\n`;
+            detailsText += `Violations: ${result.violations}\n`;
+            detailsText += `Time Spent: ${result.timeSpent ? formatTime(result.timeSpent) : 'N/A'}\n`;
+            detailsText += `Started At: ${new Date(result.startedAt).toLocaleString()}\n`;
+            
+            if (result.completedAt) {
+                detailsText += `Completed At: ${new Date(result.completedAt).toLocaleString()}\n`;
+            }
+
+            if (result.violationLog && result.violationLog.length > 0) {
+                detailsText += `\nViolation Log:\n`;
+                result.violationLog.forEach(violation => {
+                    detailsText += `- ${violation.type} at Q${violation.question} (${new Date(violation.timestamp).toLocaleTimeString()})\n`;
+                });
+            }
+
+            if (result.status === 'completed' && result.answers) {
+                detailsText += `\nAnswers:\n`;
+                questions.forEach((question, index) => {
+                    const userAnswer = result.answers[index];
+                    const isCorrect = userAnswer === question.correct;
+                    detailsText += `Q${index + 1}: ${userAnswer !== undefined ? question.options[userAnswer] : 'Not answered'} ${isCorrect ? '✓' : '✗'}\n`;
+                });
+            }
+
+            alert(detailsText);
+        }
+
+        function deleteResult(studentId) {
+            if (confirm('Are you sure you want to delete this result? This action cannot be undone.')) {
+                quizResults = quizResults.filter(r => r.studentId !== studentId);
+                localStorage.setItem('quizResults', JSON.stringify(quizResults));
+                loadAdminDashboard();
+            }
+        }
+
+        function exportResults() {
+            if (quizResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+
+            const csvContent = generateCSV();
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `quiz_results_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function generateCSV() {
+            const headers = [
+                'Student ID', 'Name', 'Email', 'Batch', 'Status', 'Score', 'Total Questions', 
+                'Percentage', 'Violations', 'Time Spent (minutes)', 'Started At', 'Completed At'
+            ];
+
+            let csv = headers.join(',') + '\n';
+
+            quizResults.forEach(result => {
+                const percentage = result.status === 'completed' ? 
+                    Math.round((result.score / result.totalQuestions) * 100) : 0;
+                
+                const timeSpentMinutes = result.timeSpent ? Math.round(result.timeSpent / 60000) : 0;
+                
+                const row = [
+                    result.studentId,
+                    `"${result.name}"`,
+                    result.email,
+                    result.batch,
+                    result.status,
+                    result.score || 0,
+                    result.totalQuestions,
+                    percentage,
+                    result.violations,
+                    timeSpentMinutes,
+                    `"${new Date(result.startedAt).toLocaleString()}"`,
+                    result.completedAt ? `"${new Date(result.completedAt).toLocaleString()}"` : 'N/A'
+                ];
+                
+                csv += row.join(',') + '\n';
+            });
+
+            return csv;
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show login page by default
+            showPage('loginPage');
+        });
+    </script>
+</body>
+</html>
