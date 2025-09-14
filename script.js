@@ -28,7 +28,7 @@ let editingQuestionIndex = -1;
 // Admin credentials (in real app, this should be server-side)
 const ADMIN_CREDENTIALS = {
     username: 'admin',
-    password: 'admin123'
+    password: 'admin0024002'
 };
 
 // Quiz configuration and state
@@ -106,7 +106,7 @@ function updateBatchOptions() {
     batchSelect.innerHTML = '<option value="">Select Batch</option>';
     
     if (selectedClass === 'SE') {
-        ['S1', 'S2', 'S3', 'S4'].forEach(batch => {
+        ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8'].forEach(batch => {
             const option = document.createElement('option');
             option.value = batch;
             option.textContent = batch;
@@ -1107,4 +1107,5 @@ function generateCSV(results) {
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     showPage('loginPage');
+
 });
