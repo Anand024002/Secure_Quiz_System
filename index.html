@@ -9,556 +9,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-app-compat.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-firestore-compat.min.js"></script>
     
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .page {
-            display: none;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        /* Login Page Styles */
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .login-box, .admin-login-box {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .login-title {
-            text-align: center;
-            font-size: 2rem;
-            color: #333;
-            margin-bottom: 30px;
-            font-weight: bold;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #555;
-            font-weight: 500;
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid rgba(102, 126, 234, 0.2);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus, .form-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: #5a6fd8;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.8);
-            color: #333;
-            border: 2px solid #667eea;
-            margin-top: 10px;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .switch-link {
-            text-align: center;
-            margin-top: 20px;
-            color: #667eea;
-            cursor: pointer;
-            text-decoration: underline;
-        }
-
-        .loading {
-            text-align: center;
-            color: #667eea;
-            margin-top: 10px;
-        }
-
-        .error {
-            background: rgba(231, 76, 60, 0.1);
-            color: #e74c3c;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .success {
-            background: rgba(39, 174, 96, 0.1);
-            color: #27ae60;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        /* Quiz Styles */
-        .quiz-container {
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .quiz-container * {
-            user-select: none;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-        }
-
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .quiz-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .quiz-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .student-info {
-            background: rgba(102, 126, 234, 0.1);
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .timer {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #e74c3c;
-            background: rgba(231, 76, 60, 0.1);
-            padding: 10px 20px;
-            border-radius: 25px;
-        }
-
-        .violation-counter {
-            font-size: 1.1rem;
-            color: #f39c12;
-            background: rgba(243, 156, 18, 0.1);
-            padding: 8px 16px;
-            border-radius: 20px;
-        }
-
-        .question-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 30px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .question-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .question-number {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .question-text {
-            font-size: 1.3rem;
-            color: #333;
-            margin-bottom: 25px;
-            line-height: 1.6;
-        }
-
-        .options {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .option {
-            display: flex;
-            align-items: center;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.7);
-            border: 2px solid rgba(102, 126, 234, 0.2);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .option:hover {
-            background: rgba(102, 126, 234, 0.1);
-            border-color: #667eea;
-        }
-
-        .option.selected {
-            background: rgba(102, 126, 234, 0.2);
-            border-color: #667eea;
-        }
-
-        .option input[type="radio"] {
-            margin-right: 15px;
-            transform: scale(1.2);
-        }
-
-        .navigation {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-        }
-
-        .btn-nav {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        /* Admin Dashboard Styles */
-        .admin-container {
-            padding: 20px 0;
-        }
-
-        .admin-header {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .admin-title {
-            font-size: 2rem;
-            color: #333;
-            font-weight: bold;
-        }
-
-        .logout-btn {
-            padding: 10px 20px;
-            background: #e74c3c;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            color: #666;
-            margin-top: 5px;
-        }
-
-        .results-table {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .table-header {
-            background: #667eea;
-            color: white;
-            padding: 15px;
-            font-weight: bold;
-        }
-
-        .table-content {
-            max-height: 600px;
-            overflow-y: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        th {
-            background: #667eea;
-            color: white;
-            position: sticky;
-            top: 0;
-        }
-
-        tr:hover {
-            background: rgba(102, 126, 234, 0.1);
-        }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 0.85rem;
-            font-weight: bold;
-        }
-
-        .status-completed {
-            background: rgba(39, 174, 96, 0.2);
-            color: #27ae60;
-        }
-
-        .status-in-progress {
-            background: rgba(243, 156, 18, 0.2);
-            color: #f39c12;
-        }
-
-        .status-violations {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-        }
-
-        /* Warning and Prompt Styles */
-        .warning-overlay, .fullscreen-prompt {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-
-        .warning-modal, .prompt-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 500px;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .warning-title {
-            font-size: 1.8rem;
-            color: #e74c3c;
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-
-        .warning-text {
-            font-size: 1.1rem;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .status-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: bold;
-            z-index: 1000;
-        }
-
-        .status-secure {
-            background: rgba(39, 174, 96, 0.9);
-            color: white;
-        }
-
-        .status-warning {
-            background: rgba(243, 156, 18, 0.9);
-            color: white;
-        }
-
-        .filters {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .filter-group label {
-            font-size: 0.9rem;
-            color: #666;
-            font-weight: 500;
-        }
-
-        .filter-group select, .filter-group input {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 0.9rem;
-        }
-
-        .firebase-config {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 2px solid #f39c12;
-        }
-
-        .firebase-config h3 {
-            color: #f39c12;
-            margin-bottom: 10px;
-        }
-
-        .firebase-config p {
-            color: #666;
-            margin-bottom: 15px;
-        }
-
-        .firebase-config textarea {
-            width: 100%;
-            height: 150px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-
-            .quiz-info, .admin-header {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            table {
-                font-size: 0.85rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
 
     <!-- Login Page -->
     <div id="loginPage" class="page active">
@@ -566,25 +19,25 @@
             <div class="login-box">
                 <h2 class="login-title">Student Login</h2>
                 <div class="form-group">
-                    <label for="studentId">Student ID</label>
-                    <input type="text" id="studentId" required placeholder="Enter your student ID">
+                    <label for="rollNumber">Roll Number</label>
+                    <input type="text" id="rollNumber" required placeholder="Enter your roll number">
                 </div>
                 <div class="form-group">
                     <label for="studentName">Full Name</label>
                     <input type="text" id="studentName" required placeholder="Enter your full name">
                 </div>
                 <div class="form-group">
-                    <label for="studentEmail">Email</label>
-                    <input type="email" id="studentEmail" required placeholder="Enter your email">
+                    <label for="studentClass">Class</label>
+                    <select id="studentClass" required onchange="updateBatchOptions()">
+                        <option value="">Select Class</option>
+                        <option value="SE">SE (Second Year)</option>
+                        <option value="TE">TE (Third Year)</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="studentBatch">Batch/Class</label>
+                    <label for="studentBatch">Batch</label>
                     <select id="studentBatch" required>
                         <option value="">Select Batch</option>
-                        <option value="CSE-2024">CSE 2024</option>
-                        <option value="IT-2024">IT 2024</option>
-                        <option value="ECE-2024">ECE 2024</option>
-                        <option value="MECH-2024">MECH 2024</option>
                     </select>
                 </div>
                 <button class="btn btn-primary" id="studentLoginBtn" onclick="studentLogin()">Start Quiz</button>
@@ -664,76 +117,142 @@
                     <button class="logout-btn" onclick="logout()">Logout</button>
                 </div>
 
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalStudents">0</div>
-                        <div class="stat-label">Total Students</div>
+                <div class="admin-tabs">
+                    <div class="admin-tab active" onclick="showAdminTab('results')">Quiz Results</div>
+                    <div class="admin-tab" onclick="showAdminTab('questions')">Question Management</div>
+                </div>
+
+                <!-- Quiz Results Tab -->
+                <div id="resultsTab" class="admin-content active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalStudents">0</div>
+                            <div class="stat-label">Total Students</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="completedQuizzes">0</div>
+                            <div class="stat-label">Completed Quizzes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="averageScore">0%</div>
+                            <div class="stat-label">Average Score</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalViolations">0</div>
+                            <div class="stat-label">Total Violations</div>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="completedQuizzes">0</div>
-                        <div class="stat-label">Completed Quizzes</div>
+
+                    <div class="filters">
+                        <div class="filter-group">
+                            <label>Class Filter</label>
+                            <select id="classFilter" onchange="filterResults()">
+                                <option value="">All Classes</option>
+                                <option value="SE">SE</option>
+                                <option value="TE">TE</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Batch Filter</label>
+                            <select id="batchFilter" onchange="filterResults()">
+                                <option value="">All Batches</option>
+                                <option value="S1">S1</option>
+                                <option value="S2">S2</option>
+                                <option value="S3">S3</option>
+                                <option value="S4">S4</option>
+                                <option value="T1">T1</option>
+                                <option value="T2">T2</option>
+                                <option value="T3">T3</option>
+                                <option value="T4">T4</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Status Filter</label>
+                            <select id="statusFilter" onchange="filterResults()">
+                                <option value="">All Status</option>
+                                <option value="completed">Completed</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="violations">With Violations</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Search Student</label>
+                            <input type="text" id="searchStudent" onkeyup="filterResults()" placeholder="Search by name or roll no">
+                        </div>
+                        <div class="filter-group">
+                            <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
+                            <button class="btn btn-secondary" onclick="loadAdminDashboard()">Refresh Data</button>
+                        </div>
                     </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="averageScore">0%</div>
-                        <div class="stat-label">Average Score</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="totalViolations">0</div>
-                        <div class="stat-label">Total Violations</div>
+
+                    <div class="results-table">
+                        <div class="table-header">Quiz Results (Real-time)</div>
+                        <div class="table-content">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Roll No</th>
+                                        <th>Name</th>
+                                        <th>Class</th>
+                                        <th>Batch</th>
+                                        <th>Score</th>
+                                        <th>Time Taken</th>
+                                        <th>Violations</th>
+                                        <th>Status</th>
+                                        <th>Started At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTableBody">
+                                    <!-- Results will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                <div class="filters">
-                    <div class="filter-group">
-                        <label>Batch Filter</label>
-                        <select id="batchFilter" onchange="filterResults()">
-                            <option value="">All Batches</option>
-                            <option value="CSE-2024">CSE 2024</option>
-                            <option value="IT-2024">IT 2024</option>
-                            <option value="ECE-2024">ECE 2024</option>
-                            <option value="MECH-2024">MECH 2024</option>
-                        </select>
+                <!-- Question Management Tab -->
+                <div id="questionsTab" class="admin-content">
+                    <div class="question-form">
+                        <h3 id="formTitle">Add New Question</h3>
+                        <div class="form-group">
+                            <label for="questionInput">Question</label>
+                            <textarea id="questionInput" placeholder="Enter your question here..."></textarea>
+                        </div>
+                        <div class="options-container">
+                            <div class="option-input">
+                                <input type="radio" name="correctAnswer" value="0" id="correct0">
+                                <input type="text" id="option0" placeholder="Option A">
+                                <label for="correct0">Correct</label>
+                            </div>
+                            <div class="option-input">
+                                <input type="radio" name="correctAnswer" value="1" id="correct1">
+                                <input type="text" id="option1" placeholder="Option B">
+                                <label for="correct1">Correct</label>
+                            </div>
+                            <div class="option-input">
+                                <input type="radio" name="correctAnswer" value="2" id="correct2">
+                                <input type="text" id="option2" placeholder="Option C">
+                                <label for="correct2">Correct</label>
+                            </div>
+                            <div class="option-input">
+                                <input type="radio" name="correctAnswer" value="3" id="correct3">
+                                <input type="text" id="option3" placeholder="Option D">
+                                <label for="correct3">Correct</label>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="saveQuestion()">Save Question</button>
+                            <button class="btn btn-secondary" onclick="cancelEdit()" id="cancelBtn" style="display: none;">Cancel</button>
+                        </div>
+                        <div id="questionFormMessage"></div>
                     </div>
-                    <div class="filter-group">
-                        <label>Status Filter</label>
-                        <select id="statusFilter" onchange="filterResults()">
-                            <option value="">All Status</option>
-                            <option value="completed">Completed</option>
-                            <option value="in-progress">In Progress</option>
-                            <option value="violations">With Violations</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label>Search Student</label>
-                        <input type="text" id="searchStudent" onkeyup="filterResults()" placeholder="Search by name or ID">
-                    </div>
-                    <div class="filter-group">
-                        <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
-                        <button class="btn btn-secondary" onclick="loadAdminDashboard()">Refresh Data</button>
-                    </div>
-                </div>
 
-                <div class="results-table">
-                    <div class="table-header">Quiz Results (Real-time)</div>
-                    <div class="table-content">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Student ID</th>
-                                    <th>Name</th>
-                                    <th>Batch</th>
-                                    <th>Score</th>
-                                    <th>Time Taken</th>
-                                    <th>Violations</th>
-                                    <th>Status</th>
-                                    <th>Started At</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsTableBody">
-                                <!-- Results will be populated here -->
-                            </tbody>
-                        </table>
+                    <div class="questions-list">
+                        <div class="table-header">Question Bank</div>
+                        <div id="questionsList">
+                            <!-- Questions will be populated here -->
+                        </div>
                     </div>
                 </div>
             </div>
@@ -749,934 +268,6 @@
         </div>
     </div>
 
-    <script>
-        // Firebase Configuration (REPLACE WITH YOUR CONFIG)
-        const firebaseConfig = {
-  apiKey: "AIzaSyACIZJ9sDvwlIu--I5s7dJWcXmtVuEB5kE",
-  authDomain: "quiz-competition-c77a3.firebaseapp.com",
-  projectId: "quiz-competition-c77a3",
-  storageBucket: "quiz-competition-c77a3.firebasestorage.app",
-  messagingSenderId: "518244647689",
-  appId: "1:518244647689:web:21499bbd2f2ec8aee1c9d8",
-  measurementId: "G-WB60T13ST3"
-};
-
-        // Initialize Firebase
-        let db = null;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
-            console.log('Firebase initialized successfully');
-        } catch (error) {
-            console.error('Firebase initialization failed:', error);
-            // Fallback to localStorage for demo purposes
-            showMessage('loginMessage', 'Running in demo mode - using local storage', 'error');
-        }
-
-        // Global state management
-        let currentUser = null;
-        let isAdmin = false;
-        
-        // Admin credentials (in real app, this should be server-side)
-        const ADMIN_CREDENTIALS = {
-            username: 'admin',
-            password: 'admin123'
-        };
-
-        // Quiz configuration and state
-        let quizState = {
-            currentQuestion: 0,
-            answers: {},
-            violations: 0,
-            maxViolations: 3,
-            timeLeft: 1800, // 30 minutes
-            isActive: false,
-            startTime: null,
-            student: null
-        };
-
-        // Sample questions
-        const questions = [
-            {
-                text: "Which of the following is NOT a valid JavaScript data type?",
-                options: ["undefined", "boolean", "integer", "symbol"],
-                correct: 2
-            },
-            {
-                text: "What is the time complexity of binary search algorithm?",
-                options: ["O(n)", "O(log n)", "O(n²)", "O(1)"],
-                correct: 1
-            },
-            {
-                text: "Which HTTP status code indicates a successful response?",
-                options: ["404", "500", "200", "301"],
-                correct: 2
-            },
-            {
-                text: "In object-oriented programming, what does 'inheritance' mean?",
-                options: [
-                    "Creating multiple objects",
-                    "A class acquiring properties from another class",
-                    "Hiding implementation details",
-                    "Grouping related functions"
-                ],
-                correct: 1
-            },
-            {
-                text: "Which of these is a NoSQL database?",
-                options: ["MySQL", "PostgreSQL", "MongoDB", "SQLite"],
-                correct: 2
-            }
-        ];
-
-        // Security monitoring variables
-        let tabSwitchCount = 0;
-        let devToolsDetected = false;
-        let securityTimer = null;
-        let violationLog = [];
-
-        // Utility functions
-        function showMessage(elementId, message, type = 'info') {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="${type}">${message}</div>`;
-        }
-
-        function setLoading(buttonId, loading = true) {
-            const button = document.getElementById(buttonId);
-            button.disabled = loading;
-            if (loading) {
-                button.innerHTML = button.innerHTML.replace('Login', 'Loading...').replace('Start Quiz', 'Loading...');
-            }
-        }
-
-        // Database functions
-        async function saveToFirebase(collection, docId, data) {
-            if (!db) {
-                // Fallback to localStorage for demo
-                const existingData = JSON.parse(localStorage.getItem(collection) || '[]');
-                const index = existingData.findIndex(item => item.id === docId);
-                if (index >= 0) {
-                    existingData[index] = { ...data, id: docId };
-                } else {
-                    existingData.push({ ...data, id: docId });
-                }
-                localStorage.setItem(collection, JSON.stringify(existingData));
-                return;
-            }
-
-            try {
-                await db.collection(collection).doc(docId).set(data, { merge: true });
-            } catch (error) {
-                console.error('Error saving to Firebase:', error);
-                throw error;
-            }
-        }
-
-        async function getFromFirebase(collection, docId = null) {
-            if (!db) {
-                // Fallback to localStorage for demo
-                const data = JSON.parse(localStorage.getItem(collection) || '[]');
-                if (docId) {
-                    return data.find(item => item.id === docId) || null;
-                }
-                return data;
-            }
-
-            try {
-                if (docId) {
-                    const doc = await db.collection(collection).doc(docId).get();
-                    return doc.exists ? doc.data() : null;
-                } else {
-                    const snapshot = await db.collection(collection).get();
-                    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                }
-            } catch (error) {
-                console.error('Error getting from Firebase:', error);
-                throw error;
-            }
-        }
-
-        async function deleteFromFirebase(collection, docId) {
-            if (!db) {
-                // Fallback to localStorage for demo
-                const data = JSON.parse(localStorage.getItem(collection) || '[]');
-                const filtered = data.filter(item => item.id !== docId);
-                localStorage.setItem(collection, JSON.stringify(filtered));
-                return;
-            }
-
-            try {
-                await db.collection(collection).doc(docId).delete();
-            } catch (error) {
-                console.error('Error deleting from Firebase:', error);
-                throw error;
-            }
-        }
-
-        // Page navigation functions
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
-            document.getElementById(pageId).classList.add('active');
-        }
-
-        function showStudentLogin() {
-            showPage('loginPage');
-        }
-
-        function showAdminLogin() {
-            showPage('adminLoginPage');
-        }
-
-        // Authentication functions
-        async function studentLogin() {
-            const studentId = document.getElementById('studentId').value.trim();
-            const studentName = document.getElementById('studentName').value.trim();
-            const studentEmail = document.getElementById('studentEmail').value.trim();
-            const studentBatch = document.getElementById('studentBatch').value;
-
-            if (!studentId || !studentName || !studentEmail || !studentBatch) {
-                showMessage('loginMessage', 'Please fill in all fields', 'error');
-                return;
-            }
-
-            setLoading('studentLoginBtn', true);
-            showMessage('loginMessage', 'Checking existing records...', 'loading');
-
-            try {
-                // Check if student already took the quiz
-                const existingResult = await getFromFirebase('quiz_results', studentId);
-                if (existingResult && existingResult.status === 'completed') {
-                    showMessage('loginMessage', 'You have already completed this quiz!', 'error');
-                    setLoading('studentLoginBtn', false);
-                    return;
-                }
-
-                currentUser = {
-                    id: studentId,
-                    name: studentName,
-                    email: studentEmail,
-                    batch: studentBatch,
-                    type: 'student'
-                };
-
-                quizState.student = currentUser;
-                document.getElementById('fullscreenPrompt').style.display = 'flex';
-                
-            } catch (error) {
-                console.error('Login error:', error);
-                showMessage('loginMessage', 'Error checking records. Please try again.', 'error');
-            }
-            
-            setLoading('studentLoginBtn', false);
-        }
-
-        async function adminLogin() {
-            const username = document.getElementById('adminUsername').value;
-            const password = document.getElementById('adminPassword').value;
-
-            if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
-                setLoading('adminLoginBtn', true);
-                showMessage('adminLoginMessage', 'Loading dashboard...', 'loading');
-                
-                currentUser = { type: 'admin' };
-                isAdmin = true;
-                showPage('adminPage');
-                await loadAdminDashboard();
-                
-                setLoading('adminLoginBtn', false);
-            } else {
-                showMessage('adminLoginMessage', 'Invalid admin credentials', 'error');
-            }
-        }
-
-        function logout() {
-            currentUser = null;
-            isAdmin = false;
-            showPage('loginPage');
-            
-            // Clear form fields
-            document.getElementById('adminUsername').value = '';
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('loginMessage').innerHTML = '';
-            document.getElementById('adminLoginMessage').innerHTML = '';
-        }
-
-        // Quiz functions
-        async function startSecureQuiz() {
-            // Request fullscreen
-            if (document.documentElement.requestFullscreen) {
-                document.documentElement.requestFullscreen();
-            } else if (document.documentElement.webkitRequestFullscreen) {
-                document.documentElement.webkitRequestFullscreen();
-            } else if (document.documentElement.msRequestFullscreen) {
-                document.documentElement.msRequestFullscreen();
-            }
-
-            // Hide prompt and show quiz
-            document.getElementById('fullscreenPrompt').style.display = 'none';
-            showPage('quizPage');
-
-            // Initialize quiz
-            quizState.isActive = true;
-            quizState.startTime = Date.now();
-            document.getElementById('studentInfo').textContent = 
-                `Student: ${currentUser.name} (${currentUser.id})`;
-            
-            // Add or update student record
-            await addOrUpdateStudentRecord('in-progress');
-            
-            loadQuestion();
-            startTimer();
-            initializeSecurity();
-        }
-
-        async function addOrUpdateStudentRecord(status) {
-            const record = {
-                studentId: currentUser.id,
-                name: currentUser.name,
-                email: currentUser.email,
-                batch: currentUser.batch,
-                status: status,
-                score: 0,
-                totalQuestions: questions.length,
-                answers: quizState.answers,
-                violations: quizState.violations,
-                violationLog: violationLog,
-                timeSpent: quizState.startTime ? Date.now() - quizState.startTime : 0,
-                startedAt: quizState.startTime ? new Date(quizState.startTime).toISOString() : new Date().toISOString(),
-                completedAt: status === 'completed' ? new Date().toISOString() : null,
-                lastUpdated: new Date().toISOString()
-            };
-
-            try {
-                await saveToFirebase('quiz_results', currentUser.id, record);
-            } catch (error) {
-                console.error('Error saving quiz record:', error);
-            }
-        }
-
-        function loadQuestion() {
-            const question = questions[quizState.currentQuestion];
-            
-            document.getElementById('questionNumber').textContent = 
-                `Question ${quizState.currentQuestion + 1} of ${questions.length}`;
-            document.getElementById('questionText').textContent = question.text;
-
-            const optionsContainer = document.getElementById('optionsContainer');
-            optionsContainer.innerHTML = '';
-
-            question.options.forEach((option, index) => {
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'option';
-                optionDiv.onclick = () => selectOption(index);
-
-                const input = document.createElement('input');
-                input.type = 'radio';
-                input.name = 'option';
-                input.value = index;
-                input.id = `option${index}`;
-
-                const label = document.createElement('label');
-                label.textContent = option;
-                label.setAttribute('for', `option${index}`);
-
-                optionDiv.appendChild(input);
-                optionDiv.appendChild(label);
-                optionsContainer.appendChild(optionDiv);
-
-                // Restore previous selection
-                if (quizState.answers[quizState.currentQuestion] === index) {
-                    input.checked = true;
-                    optionDiv.classList.add('selected');
-                }
-            });
-
-            updateNavigationButtons();
-        }
-
-        async function selectOption(index) {
-            quizState.answers[quizState.currentQuestion] = index;
-            
-            // Update UI
-            document.querySelectorAll('.option').forEach((opt, i) => {
-                opt.classList.toggle('selected', i === index);
-                opt.querySelector('input').checked = i === index;
-            });
-
-            // Update record
-            await addOrUpdateStudentRecord('in-progress');
-        }
-
-        function nextQuestion() {
-            if (quizState.currentQuestion < questions.length - 1) {
-                quizState.currentQuestion++;
-                loadQuestion();
-            }
-        }
-
-        function previousQuestion() {
-            if (quizState.currentQuestion > 0) {
-                quizState.currentQuestion--;
-                loadQuestion();
-            }
-        }
-
-        function updateNavigationButtons() {
-            const prevBtn = document.getElementById('prevBtn');
-            const nextBtn = document.getElementById('nextBtn');
-            const submitBtn = document.getElementById('submitBtn');
-
-            prevBtn.style.display = quizState.currentQuestion === 0 ? 'none' : 'block';
-            
-            if (quizState.currentQuestion === questions.length - 1) {
-                nextBtn.style.display = 'none';
-                submitBtn.style.display = 'block';
-            } else {
-                nextBtn.style.display = 'block';
-                submitBtn.style.display = 'none';
-            }
-        }
-
-        // Timer functions
-        function startTimer() {
-            const timerElement = document.getElementById('timer');
-            
-            const updateTimer = () => {
-                const minutes = Math.floor(quizState.timeLeft / 60);
-                const seconds = quizState.timeLeft % 60;
-                timerElement.textContent = `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-                
-                if (quizState.timeLeft <= 0) {
-                    forceSubmitQuiz('Time up');
-                } else {
-                    quizState.timeLeft--;
-                }
-            };
-
-            updateTimer();
-            securityTimer = setInterval(updateTimer, 1000);
-        }
-
-        // Security functions
-        function initializeSecurity() {
-            // Disable right-click context menu
-            document.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                logViolation('Right-click attempt');
-            });
-
-            // Disable text selection
-            document.addEventListener('selectstart', (e) => {
-                e.preventDefault();
-            });
-
-            // Disable drag
-            document.addEventListener('dragstart', (e) => {
-                e.preventDefault();
-            });
-
-            // Monitor keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                const forbiddenKeys = ['F12', 'F5', 'F11'];
-                const forbiddenCombos = [
-                    { ctrl: true, key: 'r' }, { ctrl: true, key: 'R' },
-                    { ctrl: true, key: 'u' }, { ctrl: true, key: 'U' },
-                    { ctrl: true, key: 's' }, { ctrl: true, key: 'S' },
-                    { ctrl: true, key: 'a' }, { ctrl: true, key: 'A' },
-                    { ctrl: true, key: 'c' }, { ctrl: true, key: 'C' },
-                    { ctrl: true, key: 'v' }, { ctrl: true, key: 'V' },
-                    { ctrl: true, key: 'x' }, { ctrl: true, key: 'X' },
-                    { ctrl: true, shift: true, key: 'i' }, { ctrl: true, shift: true, key: 'I' },
-                    { ctrl: true, shift: true, key: 'j' }, { ctrl: true, shift: true, key: 'J' },
-                    { ctrl: true, shift: true, key: 'c' }, { ctrl: true, shift: true, key: 'C' },
-                    { alt: true, key: 'Tab' }, { alt: true, key: 'F4' }
-                ];
-
-                if (forbiddenKeys.includes(e.key)) {
-                    e.preventDefault();
-                    logViolation(`Forbidden key: ${e.key}`);
-                    return false;
-                }
-
-                for (let combo of forbiddenCombos) {
-                    let match = true;
-                    if (combo.ctrl && !e.ctrlKey) match = false;
-                    if (combo.alt && !e.altKey) match = false;
-                    if (combo.shift && !e.shiftKey) match = false;
-                    if (combo.key && e.key !== combo.key) match = false;
-
-                    if (match) {
-                        e.preventDefault();
-                        logViolation(`Forbidden combination: ${JSON.stringify(combo)}`);
-                        return false;
-                    }
-                }
-            });
-
-            // Monitor visibility change (tab switching)
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden && quizState.isActive) {
-                    tabSwitchCount++;
-                    logViolation('Tab switch detected');
-                }
-            });
-
-            // Monitor focus loss
-            window.addEventListener('blur', () => {
-                if (quizState.isActive) {
-                    logViolation('Window focus lost');
-                }
-            });
-
-            // Monitor fullscreen exit
-            document.addEventListener('fullscreenchange', () => {
-                if (!document.fullscreenElement && quizState.isActive) {
-                    logViolation('Fullscreen exited');
-                    showWarning('Fullscreen mode required!', 'Please return to fullscreen to continue the quiz.');
-                }
-            });
-
-            // Monitor resize (potential dev tools)
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    if (quizState.isActive) {
-                        logViolation('Window resize detected (possible dev tools)');
-                    }
-                }, 100);
-            });
-
-            // Dev tools detection
-            setInterval(() => {
-                if (quizState.isActive) {
-                    detectDevTools();
-                }
-            }, 1000);
-
-            // Prevent page unload during active quiz
-            window.addEventListener('beforeunload', (e) => {
-                if (quizState.isActive) {
-                    e.preventDefault();
-                    e.returnValue = '';
-                    logViolation('Attempted to leave page');
-                }
-            });
-        }
-
-        function detectDevTools() {
-            const threshold = 160;
-            if (window.outerHeight - window.innerHeight > threshold || 
-                window.outerWidth - window.innerWidth > threshold) {
-                if (!devToolsDetected) {
-                    devToolsDetected = true;
-                    logViolation('Developer tools detected');
-                }
-            } else {
-                devToolsDetected = false;
-            }
-        }
-
-        async function logViolation(type) {
-            const violation = {
-                type: type,
-                timestamp: new Date().toISOString(),
-                question: quizState.currentQuestion + 1
-            };
-            
-            violationLog.push(violation);
-            quizState.violations++;
-            
-            updateViolationCounter();
-            updateStatusIndicator();
-            await addOrUpdateStudentRecord('in-progress');
-
-            if (quizState.violations >= quizState.maxViolations) {
-                showWarning(
-                    'Maximum Violations Reached!', 
-                    'Your quiz will be automatically submitted due to multiple security violations.'
-                );
-                setTimeout(() => {
-                    forceSubmitQuiz('Too many violations');
-                }, 3000);
-            } else {
-                showWarning(
-                    'Security Violation Detected!', 
-                    `${type}. You have ${quizState.maxViolations - quizState.violations} warning(s) remaining.`
-                );
-            }
-        }
-
-        function updateViolationCounter() {
-            const counter = document.getElementById('violationCounter');
-            counter.textContent = `Violations: ${quizState.violations}/${quizState.maxViolations}`;
-            
-            if (quizState.violations > 0) {
-                counter.style.color = '#e74c3c';
-                counter.style.background = 'rgba(231, 76, 60, 0.1)';
-            }
-        }
-
-        function updateStatusIndicator() {
-            const indicator = document.getElementById('statusIndicator');
-            
-            if (quizState.violations === 0) {
-                indicator.textContent = '🔒 Secure Mode';
-                indicator.className = 'status-indicator status-secure';
-            } else {
-                indicator.textContent = '⚠️ Violations Detected';
-                indicator.className = 'status-indicator status-warning';
-            }
-        }
-
-        function showWarning(title, text) {
-            document.getElementById('warningOverlay').style.display = 'flex';
-            document.querySelector('.warning-title').textContent = title;
-            document.getElementById('warningText').textContent = text;
-        }
-
-        function dismissWarning() {
-            document.getElementById('warningOverlay').style.display = 'none';
-        }
-
-        // Quiz submission functions
-        function submitQuiz() {
-            if (confirm('Are you sure you want to submit your quiz? This action cannot be undone.')) {
-                completeQuiz();
-            }
-        }
-
-        function forceSubmitQuiz(reason) {
-            alert(`Quiz automatically submitted: ${reason}`);
-            completeQuiz();
-        }
-
-        async function completeQuiz() {
-            quizState.isActive = false;
-            clearInterval(securityTimer);
-            
-            // Calculate results
-            let score = 0;
-            let totalAnswered = 0;
-            
-            questions.forEach((question, index) => {
-                if (quizState.answers.hasOwnProperty(index)) {
-                    totalAnswered++;
-                    if (quizState.answers[index] === question.correct) {
-                        score++;
-                    }
-                }
-            });
-
-            // Update final record
-            try {
-                const finalRecord = {
-                    studentId: currentUser.id,
-                    name: currentUser.name,
-                    email: currentUser.email,
-                    batch: currentUser.batch,
-                    status: 'completed',
-                    score: score,
-                    totalQuestions: questions.length,
-                    timeSpent: Date.now() - quizState.startTime,
-                    completedAt: new Date().toISOString(),
-                    answers: quizState.answers,
-                    violations: quizState.violations,
-                    violationLog: violationLog,
-                    startedAt: new Date(quizState.startTime).toISOString(),
-                    lastUpdated: new Date().toISOString()
-                };
-
-                await saveToFirebase('quiz_results', currentUser.id, finalRecord);
-            } catch (error) {
-                console.error('Error saving final results:', error);
-            }
-
-            // Exit fullscreen
-            if (document.exitFullscreen) {
-                document.exitFullscreen();
-            }
-
-            // Show results
-            alert(`Quiz Completed!\n\nScore: ${score}/${questions.length} (${Math.round((score/questions.length)*100)}%)\nQuestions Answered: ${totalAnswered}/${questions.length}\nViolations: ${quizState.violations}\nTime Taken: ${Math.floor((Date.now() - quizState.startTime) / 1000)} seconds`);
-            
-            // Return to login page
-            showPage('loginPage');
-            resetQuizState();
-        }
-
-        function resetQuizState() {
-            quizState = {
-                currentQuestion: 0,
-                answers: {},
-                violations: 0,
-                maxViolations: 3,
-                timeLeft: 1800,
-                isActive: false,
-                startTime: null,
-                student: null
-            };
-            violationLog = [];
-            currentUser = null;
-            
-            // Clear form fields
-            document.getElementById('studentId').value = '';
-            document.getElementById('studentName').value = '';
-            document.getElementById('studentEmail').value = '';
-            document.getElementById('studentBatch').value = '';
-            document.getElementById('loginMessage').innerHTML = '';
-        }
-
-        // Admin dashboard functions
-        async function loadAdminDashboard() {
-            try {
-                await updateStats();
-                await loadResultsTable();
-            } catch (error) {
-                console.error('Error loading admin dashboard:', error);
-                alert('Error loading dashboard data. Please refresh and try again.');
-            }
-        }
-
-        async function updateStats() {
-            try {
-                const results = await getFromFirebase('quiz_results');
-                const completedResults = results.filter(r => r.status === 'completed');
-                
-                document.getElementById('totalStudents').textContent = results.length;
-                document.getElementById('completedQuizzes').textContent = completedResults.length;
-                
-                if (completedResults.length > 0) {
-                    const avgScore = completedResults.reduce((sum, r) => sum + (r.score / r.totalQuestions), 0) / completedResults.length;
-                    document.getElementById('averageScore').textContent = Math.round(avgScore * 100) + '%';
-                } else {
-                    document.getElementById('averageScore').textContent = '0%';
-                }
-                
-                const totalViolations = results.reduce((sum, r) => sum + (r.violations || 0), 0);
-                document.getElementById('totalViolations').textContent = totalViolations;
-            } catch (error) {
-                console.error('Error updating stats:', error);
-            }
-        }
-
-        async function loadResultsTable() {
-            try {
-                const results = await getFromFirebase('quiz_results');
-                displayResults(results);
-            } catch (error) {
-                console.error('Error loading results table:', error);
-                document.getElementById('resultsTableBody').innerHTML = '<tr><td colspan="9">Error loading results</td></tr>';
-            }
-        }
-
-        function displayResults(results) {
-            const tableBody = document.getElementById('resultsTableBody');
-            tableBody.innerHTML = '';
-
-            if (results.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">No quiz results found</td></tr>';
-                return;
-            }
-
-            results.forEach(result => {
-                const row = document.createElement('tr');
-                
-                const statusClass = result.status === 'completed' ? 'status-completed' : 
-                                  result.status === 'in-progress' ? 'status-in-progress' : 'status-violations';
-                
-                const violationClass = (result.violations || 0) > 0 ? 'status-violations' : '';
-                
-                const timeSpent = result.timeSpent ? formatTime(result.timeSpent) : 'N/A';
-                const scorePercentage = result.status === 'completed' ? 
-                    Math.round((result.score / result.totalQuestions) * 100) : 'N/A';
-
-                row.innerHTML = `
-                    <td>${result.studentId || result.id}</td>
-                    <td>${result.name}</td>
-                    <td>${result.batch}</td>
-                    <td>${result.status === 'completed' ? `${result.score}/${result.totalQuestions} (${scorePercentage}%)` : 'N/A'}</td>
-                    <td>${timeSpent}</td>
-                    <td><span class="status-badge ${violationClass}">${result.violations || 0}</span></td>
-                    <td><span class="status-badge ${statusClass}">${result.status}</span></td>
-                    <td>${new Date(result.startedAt).toLocaleString()}</td>
-                    <td>
-                        <button onclick="viewDetails('${result.studentId || result.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
-                        <button onclick="deleteResult('${result.studentId || result.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #e74c3c; color: white; margin-left: 5px;">Delete</button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-
-        function formatTime(milliseconds) {
-            const seconds = Math.floor(milliseconds / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
-            return `${minutes}m ${remainingSeconds}s`;
-        }
-
-        async function filterResults() {
-            const batchFilter = document.getElementById('batchFilter').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-            const searchTerm = document.getElementById('searchStudent').value.toLowerCase();
-
-            try {
-                let results = await getFromFirebase('quiz_results');
-
-                if (batchFilter) {
-                    results = results.filter(r => r.batch === batchFilter);
-                }
-
-                if (statusFilter) {
-                    if (statusFilter === 'violations') {
-                        results = results.filter(r => (r.violations || 0) > 0);
-                    } else {
-                        results = results.filter(r => r.status === statusFilter);
-                    }
-                }
-
-                if (searchTerm) {
-                    results = results.filter(r => 
-                        (r.name && r.name.toLowerCase().includes(searchTerm)) || 
-                        (r.studentId && r.studentId.toLowerCase().includes(searchTerm)) ||
-                        (r.id && r.id.toLowerCase().includes(searchTerm))
-                    );
-                }
-
-                displayResults(results);
-            } catch (error) {
-                console.error('Error filtering results:', error);
-            }
-        }
-
-        async function viewDetails(studentId) {
-            try {
-                const result = await getFromFirebase('quiz_results', studentId);
-                if (!result) {
-                    alert('Student record not found');
-                    return;
-                }
-
-                let detailsText = `Student Details:\n`;
-                detailsText += `ID: ${result.studentId || result.id}\n`;
-                detailsText += `Name: ${result.name}\n`;
-                detailsText += `Email: ${result.email}\n`;
-                detailsText += `Batch: ${result.batch}\n`;
-                detailsText += `Status: ${result.status}\n`;
-                detailsText += `Score: ${result.status === 'completed' ? `${result.score}/${result.totalQuestions}` : 'N/A'}\n`;
-                detailsText += `Violations: ${result.violations || 0}\n`;
-                detailsText += `Time Spent: ${result.timeSpent ? formatTime(result.timeSpent) : 'N/A'}\n`;
-                detailsText += `Started At: ${new Date(result.startedAt).toLocaleString()}\n`;
-                
-                if (result.completedAt) {
-                    detailsText += `Completed At: ${new Date(result.completedAt).toLocaleString()}\n`;
-                }
-
-                if (result.violationLog && result.violationLog.length > 0) {
-                    detailsText += `\nViolation Log:\n`;
-                    result.violationLog.forEach(violation => {
-                        detailsText += `- ${violation.type} at Q${violation.question} (${new Date(violation.timestamp).toLocaleTimeString()})\n`;
-                    });
-                }
-
-                if (result.status === 'completed' && result.answers) {
-                    detailsText += `\nAnswers:\n`;
-                    questions.forEach((question, index) => {
-                        const userAnswer = result.answers[index];
-                        const isCorrect = userAnswer === question.correct;
-                        detailsText += `Q${index + 1}: ${userAnswer !== undefined ? question.options[userAnswer] : 'Not answered'} ${isCorrect ? '✓' : '✗'}\n`;
-                    });
-                }
-
-                alert(detailsText);
-            } catch (error) {
-                console.error('Error viewing details:', error);
-                alert('Error loading student details');
-            }
-        }
-
-        async function deleteResult(studentId) {
-            if (confirm('Are you sure you want to delete this result? This action cannot be undone.')) {
-                try {
-                    await deleteFromFirebase('quiz_results', studentId);
-                    await loadAdminDashboard();
-                    alert('Result deleted successfully');
-                } catch (error) {
-                    console.error('Error deleting result:', error);
-                    alert('Error deleting result');
-                }
-            }
-        }
-
-        async function exportResults() {
-            try {
-                const results = await getFromFirebase('quiz_results');
-                if (results.length === 0) {
-                    alert('No results to export');
-                    return;
-                }
-
-                const csvContent = generateCSV(results);
-                const blob = new Blob([csvContent], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `quiz_results_${new Date().toISOString().split('T')[0]}.csv`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            } catch (error) {
-                console.error('Error exporting results:', error);
-                alert('Error exporting results');
-            }
-        }
-
-        function generateCSV(results) {
-            const headers = [
-                'Student ID', 'Name', 'Email', 'Batch', 'Status', 'Score', 'Total Questions', 
-                'Percentage', 'Violations', 'Time Spent (minutes)', 'Started At', 'Completed At'
-            ];
-
-            let csv = headers.join(',') + '\n';
-
-            results.forEach(result => {
-                const percentage = result.status === 'completed' ? 
-                    Math.round((result.score / result.totalQuestions) * 100) : 0;
-                
-                const timeSpentMinutes = result.timeSpent ? Math.round(result.timeSpent / 60000) : 0;
-                
-                const row = [
-                    result.studentId || result.id,
-                    `"${result.name}"`,
-                    result.email,
-                    result.batch,
-                    result.status,
-                    result.score || 0,
-                    result.totalQuestions,
-                    percentage,
-                    result.violations || 0,
-                    timeSpentMinutes,
-                    `"${new Date(result.startedAt).toLocaleString()}"`,
-                    result.completedAt ? `"${new Date(result.completedAt).toLocaleString()}"` : 'N/A'
-                ];
-                
-                csv += row.join(',') + '\n';
-            });
-
-            return csv;
-        }
-
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show login page by default
-            showPage('loginPage');
-        });
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
-            
