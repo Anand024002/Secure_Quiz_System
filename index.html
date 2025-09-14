@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Secure Quiz Management System</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-firestore-compat.min.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -95,12 +100,17 @@
             transition: all 0.3s ease;
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .btn-primary {
             background: #667eea;
             color: white;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background: #5a6fd8;
             transform: translateY(-2px);
         }
@@ -122,6 +132,30 @@
             color: #667eea;
             cursor: pointer;
             text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            margin-top: 10px;
+        }
+
+        .error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .success {
+            background: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            text-align: center;
         }
 
         /* Quiz Styles */
@@ -470,6 +504,34 @@
             font-size: 0.9rem;
         }
 
+        .firebase-config {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #f39c12;
+        }
+
+        .firebase-config h3 {
+            color: #f39c12;
+            margin-bottom: 10px;
+        }
+
+        .firebase-config p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .firebase-config textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -496,6 +558,8 @@
     </style>
 </head>
 <body>
+
+
     <!-- Login Page -->
     <div id="loginPage" class="page active">
         <div class="login-container">
@@ -523,8 +587,9 @@
                         <option value="MECH-2024">MECH 2024</option>
                     </select>
                 </div>
-                <button class="btn btn-primary" onclick="studentLogin()">Start Quiz</button>
+                <button class="btn btn-primary" id="studentLoginBtn" onclick="studentLogin()">Start Quiz</button>
                 <div class="switch-link" onclick="showAdminLogin()">Admin Login</div>
+                <div id="loginMessage"></div>
             </div>
         </div>
     </div>
@@ -542,8 +607,9 @@
                     <label for="adminPassword">Password</label>
                     <input type="password" id="adminPassword" required placeholder="Enter admin password">
                 </div>
-                <button class="btn btn-primary" onclick="adminLogin()">Login</button>
+                <button class="btn btn-primary" id="adminLoginBtn" onclick="adminLogin()">Login</button>
                 <div class="switch-link" onclick="showStudentLogin()">Student Login</div>
+                <div id="adminLoginMessage"></div>
             </div>
         </div>
     </div>
@@ -643,11 +709,12 @@
                     </div>
                     <div class="filter-group">
                         <button class="btn btn-secondary" onclick="exportResults()">Export Results</button>
+                        <button class="btn btn-secondary" onclick="loadAdminDashboard()">Refresh Data</button>
                     </div>
                 </div>
 
                 <div class="results-table">
-                    <div class="table-header">Quiz Results</div>
+                    <div class="table-header">Quiz Results (Real-time)</div>
                     <div class="table-content">
                         <table>
                             <thead>
@@ -683,10 +750,32 @@
     </div>
 
     <script>
+        // Firebase Configuration (REPLACE WITH YOUR CONFIG)
+        const firebaseConfig = {
+            // This is a demo config - replace with your actual Firebase config
+            apiKey: "demo-api-key",
+            authDomain: "demo-project.firebaseapp.com",
+            projectId: "demo-project-id",
+            storageBucket: "demo-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "demo-app-id"
+        };
+
+        // Initialize Firebase
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            // Fallback to localStorage for demo purposes
+            showMessage('loginMessage', 'Running in demo mode - using local storage', 'error');
+        }
+
         // Global state management
         let currentUser = null;
         let isAdmin = false;
-        let quizResults = JSON.parse(localStorage.getItem('quizResults') || '[]');
         
         // Admin credentials (in real app, this should be server-side)
         const ADMIN_CREDENTIALS = {
@@ -746,6 +835,84 @@
         let securityTimer = null;
         let violationLog = [];
 
+        // Utility functions
+        function showMessage(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function setLoading(buttonId, loading = true) {
+            const button = document.getElementById(buttonId);
+            button.disabled = loading;
+            if (loading) {
+                button.innerHTML = button.innerHTML.replace('Login', 'Loading...').replace('Start Quiz', 'Loading...');
+            }
+        }
+
+        // Database functions
+        async function saveToFirebase(collection, docId, data) {
+            if (!db) {
+                // Fallback to localStorage for demo
+                const existingData = JSON.parse(localStorage.getItem(collection) || '[]');
+                const index = existingData.findIndex(item => item.id === docId);
+                if (index >= 0) {
+                    existingData[index] = { ...data, id: docId };
+                } else {
+                    existingData.push({ ...data, id: docId });
+                }
+                localStorage.setItem(collection, JSON.stringify(existingData));
+                return;
+            }
+
+            try {
+                await db.collection(collection).doc(docId).set(data, { merge: true });
+            } catch (error) {
+                console.error('Error saving to Firebase:', error);
+                throw error;
+            }
+        }
+
+        async function getFromFirebase(collection, docId = null) {
+            if (!db) {
+                // Fallback to localStorage for demo
+                const data = JSON.parse(localStorage.getItem(collection) || '[]');
+                if (docId) {
+                    return data.find(item => item.id === docId) || null;
+                }
+                return data;
+            }
+
+            try {
+                if (docId) {
+                    const doc = await db.collection(collection).doc(docId).get();
+                    return doc.exists ? doc.data() : null;
+                } else {
+                    const snapshot = await db.collection(collection).get();
+                    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                }
+            } catch (error) {
+                console.error('Error getting from Firebase:', error);
+                throw error;
+            }
+        }
+
+        async function deleteFromFirebase(collection, docId) {
+            if (!db) {
+                // Fallback to localStorage for demo
+                const data = JSON.parse(localStorage.getItem(collection) || '[]');
+                const filtered = data.filter(item => item.id !== docId);
+                localStorage.setItem(collection, JSON.stringify(filtered));
+                return;
+            }
+
+            try {
+                await db.collection(collection).doc(docId).delete();
+            } catch (error) {
+                console.error('Error deleting from Firebase:', error);
+                throw error;
+            }
+        }
+
         // Page navigation functions
         function showPage(pageId) {
             document.querySelectorAll('.page').forEach(page => {
@@ -763,47 +930,64 @@
         }
 
         // Authentication functions
-        function studentLogin() {
+        async function studentLogin() {
             const studentId = document.getElementById('studentId').value.trim();
             const studentName = document.getElementById('studentName').value.trim();
             const studentEmail = document.getElementById('studentEmail').value.trim();
             const studentBatch = document.getElementById('studentBatch').value;
 
             if (!studentId || !studentName || !studentEmail || !studentBatch) {
-                alert('Please fill in all fields');
+                showMessage('loginMessage', 'Please fill in all fields', 'error');
                 return;
             }
 
-            // Check if student already took the quiz
-            const existingResult = quizResults.find(result => result.studentId === studentId);
-            if (existingResult && existingResult.status === 'completed') {
-                alert('You have already completed this quiz!');
-                return;
+            setLoading('studentLoginBtn', true);
+            showMessage('loginMessage', 'Checking existing records...', 'loading');
+
+            try {
+                // Check if student already took the quiz
+                const existingResult = await getFromFirebase('quiz_results', studentId);
+                if (existingResult && existingResult.status === 'completed') {
+                    showMessage('loginMessage', 'You have already completed this quiz!', 'error');
+                    setLoading('studentLoginBtn', false);
+                    return;
+                }
+
+                currentUser = {
+                    id: studentId,
+                    name: studentName,
+                    email: studentEmail,
+                    batch: studentBatch,
+                    type: 'student'
+                };
+
+                quizState.student = currentUser;
+                document.getElementById('fullscreenPrompt').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showMessage('loginMessage', 'Error checking records. Please try again.', 'error');
             }
-
-            currentUser = {
-                id: studentId,
-                name: studentName,
-                email: studentEmail,
-                batch: studentBatch,
-                type: 'student'
-            };
-
-            quizState.student = currentUser;
-            document.getElementById('fullscreenPrompt').style.display = 'flex';
+            
+            setLoading('studentLoginBtn', false);
         }
 
-        function adminLogin() {
+        async function adminLogin() {
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
 
             if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+                setLoading('adminLoginBtn', true);
+                showMessage('adminLoginMessage', 'Loading dashboard...', 'loading');
+                
                 currentUser = { type: 'admin' };
                 isAdmin = true;
                 showPage('adminPage');
-                loadAdminDashboard();
+                await loadAdminDashboard();
+                
+                setLoading('adminLoginBtn', false);
             } else {
-                alert('Invalid admin credentials');
+                showMessage('adminLoginMessage', 'Invalid admin credentials', 'error');
             }
         }
 
@@ -815,10 +999,12 @@
             // Clear form fields
             document.getElementById('adminUsername').value = '';
             document.getElementById('adminPassword').value = '';
+            document.getElementById('loginMessage').innerHTML = '';
+            document.getElementById('adminLoginMessage').innerHTML = '';
         }
 
         // Quiz functions
-        function startSecureQuiz() {
+        async function startSecureQuiz() {
             // Request fullscreen
             if (document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen();
@@ -839,16 +1025,14 @@
                 `Student: ${currentUser.name} (${currentUser.id})`;
             
             // Add or update student record
-            addOrUpdateStudentRecord('in-progress');
+            await addOrUpdateStudentRecord('in-progress');
             
             loadQuestion();
             startTimer();
             initializeSecurity();
         }
 
-        function addOrUpdateStudentRecord(status) {
-            const existingIndex = quizResults.findIndex(result => result.studentId === currentUser.id);
-            
+        async function addOrUpdateStudentRecord(status) {
             const record = {
                 studentId: currentUser.id,
                 name: currentUser.name,
@@ -862,16 +1046,15 @@
                 violationLog: violationLog,
                 timeSpent: quizState.startTime ? Date.now() - quizState.startTime : 0,
                 startedAt: quizState.startTime ? new Date(quizState.startTime).toISOString() : new Date().toISOString(),
-                completedAt: status === 'completed' ? new Date().toISOString() : null
+                completedAt: status === 'completed' ? new Date().toISOString() : null,
+                lastUpdated: new Date().toISOString()
             };
 
-            if (existingIndex >= 0) {
-                quizResults[existingIndex] = record;
-            } else {
-                quizResults.push(record);
+            try {
+                await saveToFirebase('quiz_results', currentUser.id, record);
+            } catch (error) {
+                console.error('Error saving quiz record:', error);
             }
-
-            localStorage.setItem('quizResults', JSON.stringify(quizResults));
         }
 
         function loadQuestion() {
@@ -913,7 +1096,7 @@
             updateNavigationButtons();
         }
 
-        function selectOption(index) {
+        async function selectOption(index) {
             quizState.answers[quizState.currentQuestion] = index;
             
             // Update UI
@@ -923,7 +1106,7 @@
             });
 
             // Update record
-            addOrUpdateStudentRecord('in-progress');
+            await addOrUpdateStudentRecord('in-progress');
         }
 
         function nextQuestion() {
@@ -1096,7 +1279,7 @@
             }
         }
 
-        function logViolation(type) {
+        async function logViolation(type) {
             const violation = {
                 type: type,
                 timestamp: new Date().toISOString(),
@@ -1108,7 +1291,7 @@
             
             updateViolationCounter();
             updateStatusIndicator();
-            addOrUpdateStudentRecord('in-progress');
+            await addOrUpdateStudentRecord('in-progress');
 
             if (quizState.violations >= quizState.maxViolations) {
                 showWarning(
@@ -1170,7 +1353,7 @@
             completeQuiz();
         }
 
-        function completeQuiz() {
+        async function completeQuiz() {
             quizState.isActive = false;
             clearInterval(securityTimer);
             
@@ -1188,18 +1371,28 @@
             });
 
             // Update final record
-            const finalRecord = quizResults.find(result => result.studentId === currentUser.id);
-            if (finalRecord) {
-                finalRecord.status = 'completed';
-                finalRecord.score = score;
-                finalRecord.timeSpent = Date.now() - quizState.startTime;
-                finalRecord.completedAt = new Date().toISOString();
-                finalRecord.answers = quizState.answers;
-                finalRecord.violations = quizState.violations;
-                finalRecord.violationLog = violationLog;
-            }
+            try {
+                const finalRecord = {
+                    studentId: currentUser.id,
+                    name: currentUser.name,
+                    email: currentUser.email,
+                    batch: currentUser.batch,
+                    status: 'completed',
+                    score: score,
+                    totalQuestions: questions.length,
+                    timeSpent: Date.now() - quizState.startTime,
+                    completedAt: new Date().toISOString(),
+                    answers: quizState.answers,
+                    violations: quizState.violations,
+                    violationLog: violationLog,
+                    startedAt: new Date(quizState.startTime).toISOString(),
+                    lastUpdated: new Date().toISOString()
+                };
 
-            localStorage.setItem('quizResults', JSON.stringify(quizResults));
+                await saveToFirebase('quiz_results', currentUser.id, finalRecord);
+            } catch (error) {
+                console.error('Error saving final results:', error);
+            }
 
             // Exit fullscreen
             if (document.exitFullscreen) {
@@ -1233,60 +1426,85 @@
             document.getElementById('studentName').value = '';
             document.getElementById('studentEmail').value = '';
             document.getElementById('studentBatch').value = '';
+            document.getElementById('loginMessage').innerHTML = '';
         }
 
         // Admin dashboard functions
-        function loadAdminDashboard() {
-            updateStats();
-            loadResultsTable();
-        }
-
-        function updateStats() {
-            const results = quizResults;
-            const completedResults = results.filter(r => r.status === 'completed');
-            
-            document.getElementById('totalStudents').textContent = results.length;
-            document.getElementById('completedQuizzes').textContent = completedResults.length;
-            
-            if (completedResults.length > 0) {
-                const avgScore = completedResults.reduce((sum, r) => sum + (r.score / r.totalQuestions), 0) / completedResults.length;
-                document.getElementById('averageScore').textContent = Math.round(avgScore * 100) + '%';
-            } else {
-                document.getElementById('averageScore').textContent = '0%';
+        async function loadAdminDashboard() {
+            try {
+                await updateStats();
+                await loadResultsTable();
+            } catch (error) {
+                console.error('Error loading admin dashboard:', error);
+                alert('Error loading dashboard data. Please refresh and try again.');
             }
-            
-            const totalViolations = results.reduce((sum, r) => sum + r.violations, 0);
-            document.getElementById('totalViolations').textContent = totalViolations;
         }
 
-        function loadResultsTable() {
+        async function updateStats() {
+            try {
+                const results = await getFromFirebase('quiz_results');
+                const completedResults = results.filter(r => r.status === 'completed');
+                
+                document.getElementById('totalStudents').textContent = results.length;
+                document.getElementById('completedQuizzes').textContent = completedResults.length;
+                
+                if (completedResults.length > 0) {
+                    const avgScore = completedResults.reduce((sum, r) => sum + (r.score / r.totalQuestions), 0) / completedResults.length;
+                    document.getElementById('averageScore').textContent = Math.round(avgScore * 100) + '%';
+                } else {
+                    document.getElementById('averageScore').textContent = '0%';
+                }
+                
+                const totalViolations = results.reduce((sum, r) => sum + (r.violations || 0), 0);
+                document.getElementById('totalViolations').textContent = totalViolations;
+            } catch (error) {
+                console.error('Error updating stats:', error);
+            }
+        }
+
+        async function loadResultsTable() {
+            try {
+                const results = await getFromFirebase('quiz_results');
+                displayResults(results);
+            } catch (error) {
+                console.error('Error loading results table:', error);
+                document.getElementById('resultsTableBody').innerHTML = '<tr><td colspan="9">Error loading results</td></tr>';
+            }
+        }
+
+        function displayResults(results) {
             const tableBody = document.getElementById('resultsTableBody');
             tableBody.innerHTML = '';
 
-            quizResults.forEach(result => {
+            if (results.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">No quiz results found</td></tr>';
+                return;
+            }
+
+            results.forEach(result => {
                 const row = document.createElement('tr');
                 
                 const statusClass = result.status === 'completed' ? 'status-completed' : 
                                   result.status === 'in-progress' ? 'status-in-progress' : 'status-violations';
                 
-                const violationClass = result.violations > 0 ? 'status-violations' : '';
+                const violationClass = (result.violations || 0) > 0 ? 'status-violations' : '';
                 
                 const timeSpent = result.timeSpent ? formatTime(result.timeSpent) : 'N/A';
                 const scorePercentage = result.status === 'completed' ? 
                     Math.round((result.score / result.totalQuestions) * 100) : 'N/A';
 
                 row.innerHTML = `
-                    <td>${result.studentId}</td>
+                    <td>${result.studentId || result.id}</td>
                     <td>${result.name}</td>
                     <td>${result.batch}</td>
                     <td>${result.status === 'completed' ? `${result.score}/${result.totalQuestions} (${scorePercentage}%)` : 'N/A'}</td>
                     <td>${timeSpent}</td>
-                    <td><span class="status-badge ${violationClass}">${result.violations}</span></td>
+                    <td><span class="status-badge ${violationClass}">${result.violations || 0}</span></td>
                     <td><span class="status-badge ${statusClass}">${result.status}</span></td>
                     <td>${new Date(result.startedAt).toLocaleString()}</td>
                     <td>
-                        <button onclick="viewDetails('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
-                        <button onclick="deleteResult('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #e74c3c; color: white; margin-left: 5px;">Delete</button>
+                        <button onclick="viewDetails('${result.studentId || result.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
+                        <button onclick="deleteResult('${result.studentId || result.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #e74c3c; color: white; margin-left: 5px;">Delete</button>
                     </td>
                 `;
                 
@@ -1301,132 +1519,124 @@
             return `${minutes}m ${remainingSeconds}s`;
         }
 
-        function filterResults() {
+        async function filterResults() {
             const batchFilter = document.getElementById('batchFilter').value;
             const statusFilter = document.getElementById('statusFilter').value;
             const searchTerm = document.getElementById('searchStudent').value.toLowerCase();
 
-            let filteredResults = quizResults;
+            try {
+                let results = await getFromFirebase('quiz_results');
 
-            if (batchFilter) {
-                filteredResults = filteredResults.filter(r => r.batch === batchFilter);
+                if (batchFilter) {
+                    results = results.filter(r => r.batch === batchFilter);
+                }
+
+                if (statusFilter) {
+                    if (statusFilter === 'violations') {
+                        results = results.filter(r => (r.violations || 0) > 0);
+                    } else {
+                        results = results.filter(r => r.status === statusFilter);
+                    }
+                }
+
+                if (searchTerm) {
+                    results = results.filter(r => 
+                        (r.name && r.name.toLowerCase().includes(searchTerm)) || 
+                        (r.studentId && r.studentId.toLowerCase().includes(searchTerm)) ||
+                        (r.id && r.id.toLowerCase().includes(searchTerm))
+                    );
+                }
+
+                displayResults(results);
+            } catch (error) {
+                console.error('Error filtering results:', error);
             }
+        }
 
-            if (statusFilter) {
-                if (statusFilter === 'violations') {
-                    filteredResults = filteredResults.filter(r => r.violations > 0);
-                } else {
-                    filteredResults = filteredResults.filter(r => r.status === statusFilter);
+        async function viewDetails(studentId) {
+            try {
+                const result = await getFromFirebase('quiz_results', studentId);
+                if (!result) {
+                    alert('Student record not found');
+                    return;
+                }
+
+                let detailsText = `Student Details:\n`;
+                detailsText += `ID: ${result.studentId || result.id}\n`;
+                detailsText += `Name: ${result.name}\n`;
+                detailsText += `Email: ${result.email}\n`;
+                detailsText += `Batch: ${result.batch}\n`;
+                detailsText += `Status: ${result.status}\n`;
+                detailsText += `Score: ${result.status === 'completed' ? `${result.score}/${result.totalQuestions}` : 'N/A'}\n`;
+                detailsText += `Violations: ${result.violations || 0}\n`;
+                detailsText += `Time Spent: ${result.timeSpent ? formatTime(result.timeSpent) : 'N/A'}\n`;
+                detailsText += `Started At: ${new Date(result.startedAt).toLocaleString()}\n`;
+                
+                if (result.completedAt) {
+                    detailsText += `Completed At: ${new Date(result.completedAt).toLocaleString()}\n`;
+                }
+
+                if (result.violationLog && result.violationLog.length > 0) {
+                    detailsText += `\nViolation Log:\n`;
+                    result.violationLog.forEach(violation => {
+                        detailsText += `- ${violation.type} at Q${violation.question} (${new Date(violation.timestamp).toLocaleTimeString()})\n`;
+                    });
+                }
+
+                if (result.status === 'completed' && result.answers) {
+                    detailsText += `\nAnswers:\n`;
+                    questions.forEach((question, index) => {
+                        const userAnswer = result.answers[index];
+                        const isCorrect = userAnswer === question.correct;
+                        detailsText += `Q${index + 1}: ${userAnswer !== undefined ? question.options[userAnswer] : 'Not answered'} ${isCorrect ? '✓' : '✗'}\n`;
+                    });
+                }
+
+                alert(detailsText);
+            } catch (error) {
+                console.error('Error viewing details:', error);
+                alert('Error loading student details');
+            }
+        }
+
+        async function deleteResult(studentId) {
+            if (confirm('Are you sure you want to delete this result? This action cannot be undone.')) {
+                try {
+                    await deleteFromFirebase('quiz_results', studentId);
+                    await loadAdminDashboard();
+                    alert('Result deleted successfully');
+                } catch (error) {
+                    console.error('Error deleting result:', error);
+                    alert('Error deleting result');
                 }
             }
-
-            if (searchTerm) {
-                filteredResults = filteredResults.filter(r => 
-                    r.name.toLowerCase().includes(searchTerm) || 
-                    r.studentId.toLowerCase().includes(searchTerm)
-                );
-            }
-
-            // Update table with filtered results
-            const tableBody = document.getElementById('resultsTableBody');
-            tableBody.innerHTML = '';
-
-            filteredResults.forEach(result => {
-                const row = document.createElement('tr');
-                
-                const statusClass = result.status === 'completed' ? 'status-completed' : 
-                                  result.status === 'in-progress' ? 'status-in-progress' : 'status-violations';
-                
-                const violationClass = result.violations > 0 ? 'status-violations' : '';
-                
-                const timeSpent = result.timeSpent ? formatTime(result.timeSpent) : 'N/A';
-                const scorePercentage = result.status === 'completed' ? 
-                    Math.round((result.score / result.totalQuestions) * 100) : 'N/A';
-
-                row.innerHTML = `
-                    <td>${result.studentId}</td>
-                    <td>${result.name}</td>
-                    <td>${result.batch}</td>
-                    <td>${result.status === 'completed' ? `${result.score}/${result.totalQuestions} (${scorePercentage}%)` : 'N/A'}</td>
-                    <td>${timeSpent}</td>
-                    <td><span class="status-badge ${violationClass}">${result.violations}</span></td>
-                    <td><span class="status-badge ${statusClass}">${result.status}</span></td>
-                    <td>${new Date(result.startedAt).toLocaleString()}</td>
-                    <td>
-                        <button onclick="viewDetails('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View</button>
-                        <button onclick="deleteResult('${result.studentId}')" class="btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; background: #e74c3c; color: white; margin-left: 5px;">Delete</button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
         }
 
-        function viewDetails(studentId) {
-            const result = quizResults.find(r => r.studentId === studentId);
-            if (!result) return;
+        async function exportResults() {
+            try {
+                const results = await getFromFirebase('quiz_results');
+                if (results.length === 0) {
+                    alert('No results to export');
+                    return;
+                }
 
-            let detailsText = `Student Details:\n`;
-            detailsText += `ID: ${result.studentId}\n`;
-            detailsText += `Name: ${result.name}\n`;
-            detailsText += `Email: ${result.email}\n`;
-            detailsText += `Batch: ${result.batch}\n`;
-            detailsText += `Status: ${result.status}\n`;
-            detailsText += `Score: ${result.status === 'completed' ? `${result.score}/${result.totalQuestions}` : 'N/A'}\n`;
-            detailsText += `Violations: ${result.violations}\n`;
-            detailsText += `Time Spent: ${result.timeSpent ? formatTime(result.timeSpent) : 'N/A'}\n`;
-            detailsText += `Started At: ${new Date(result.startedAt).toLocaleString()}\n`;
-            
-            if (result.completedAt) {
-                detailsText += `Completed At: ${new Date(result.completedAt).toLocaleString()}\n`;
-            }
-
-            if (result.violationLog && result.violationLog.length > 0) {
-                detailsText += `\nViolation Log:\n`;
-                result.violationLog.forEach(violation => {
-                    detailsText += `- ${violation.type} at Q${violation.question} (${new Date(violation.timestamp).toLocaleTimeString()})\n`;
-                });
-            }
-
-            if (result.status === 'completed' && result.answers) {
-                detailsText += `\nAnswers:\n`;
-                questions.forEach((question, index) => {
-                    const userAnswer = result.answers[index];
-                    const isCorrect = userAnswer === question.correct;
-                    detailsText += `Q${index + 1}: ${userAnswer !== undefined ? question.options[userAnswer] : 'Not answered'} ${isCorrect ? '✓' : '✗'}\n`;
-                });
-            }
-
-            alert(detailsText);
-        }
-
-        function deleteResult(studentId) {
-            if (confirm('Are you sure you want to delete this result? This action cannot be undone.')) {
-                quizResults = quizResults.filter(r => r.studentId !== studentId);
-                localStorage.setItem('quizResults', JSON.stringify(quizResults));
-                loadAdminDashboard();
+                const csvContent = generateCSV(results);
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `quiz_results_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error exporting results:', error);
+                alert('Error exporting results');
             }
         }
 
-        function exportResults() {
-            if (quizResults.length === 0) {
-                alert('No results to export');
-                return;
-            }
-
-            const csvContent = generateCSV();
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `quiz_results_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        function generateCSV() {
+        function generateCSV(results) {
             const headers = [
                 'Student ID', 'Name', 'Email', 'Batch', 'Status', 'Score', 'Total Questions', 
                 'Percentage', 'Violations', 'Time Spent (minutes)', 'Started At', 'Completed At'
@@ -1434,14 +1644,14 @@
 
             let csv = headers.join(',') + '\n';
 
-            quizResults.forEach(result => {
+            results.forEach(result => {
                 const percentage = result.status === 'completed' ? 
                     Math.round((result.score / result.totalQuestions) * 100) : 0;
                 
                 const timeSpentMinutes = result.timeSpent ? Math.round(result.timeSpent / 60000) : 0;
                 
                 const row = [
-                    result.studentId,
+                    result.studentId || result.id,
                     `"${result.name}"`,
                     result.email,
                     result.batch,
@@ -1449,7 +1659,7 @@
                     result.score || 0,
                     result.totalQuestions,
                     percentage,
-                    result.violations,
+                    result.violations || 0,
                     timeSpentMinutes,
                     `"${new Date(result.startedAt).toLocaleString()}"`,
                     result.completedAt ? `"${new Date(result.completedAt).toLocaleString()}"` : 'N/A'
